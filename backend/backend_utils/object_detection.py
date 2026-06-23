@@ -31,12 +31,12 @@ def load_yolo_model():
         # Try to load custom trained model first, fallback to pretrained
         if os.path.exists(model_path):
             _yolo_model = torch.hub.load('ultralytics/yolov5', 'custom', 
-                                        path=model_path, force_reload=False)
+                                        path=model_path, force_reload=False, trust_repo=True)
             print(f"✓ Loaded custom YOLOv5 model from {model_path}")
         else:
             # Fallback to pretrained model (will auto-download)
             _yolo_model = torch.hub.load('ultralytics/yolov5', 'yolov5n', 
-                                        pretrained=True, force_reload=False)
+                                        pretrained=True, force_reload=False, trust_repo=True)
             print("✓ Loaded pretrained YOLOv5n model")
         
         # Configure model settings
