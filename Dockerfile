@@ -27,7 +27,10 @@ WORKDIR $HOME/app/backend
 COPY --chown=user . $HOME/app
 
 # Install Python dependencies from backend/requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+# Force headless OpenCV to prevent MediaPipe import conflicts in Docker
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip uninstall -y opencv-python opencv-contrib-python \
+    && pip install --no-cache-dir opencv-python-headless==4.10.0.84
 
 # Expose the specific port Hugging Face Spaces expects
 EXPOSE 7860
