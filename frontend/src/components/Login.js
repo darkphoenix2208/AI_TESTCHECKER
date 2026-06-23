@@ -45,7 +45,7 @@ export default function Login() {
                             🎓
                         </div>
                         <div style={{ textAlign: 'left' }}>
-                            <div className="page-title">SecureExam Login</div>
+                            <div className="page-title">AISAFEEXAM Login</div>
                             <div className="muted">Secure student authentication system</div>
                         </div>
                     </div>

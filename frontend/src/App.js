@@ -18,9 +18,9 @@ function App() {
           <div className="container">
             <div className="brand">
               <div className="logo">
-                <img src="./logo.png" alt="SecureExam AI Logo" style={{ width: "50px", height: "50px" }} />
+                <img src="./logo.png" alt="AISAFEEXAM Logo" style={{ width: "50px", height: "50px" }} />
               </div>
-              <div>SecureExam AI</div>
+              <div>AISAFEEXAM</div>
             </div>
             <nav className="nav">
               <Link to="/">Home</Link>

@@ -17,7 +17,7 @@ def health_check():
     """Basic health check endpoint for Render"""
     return jsonify({
         'status': 'healthy',
-        'service': 'SecureExam AI Backend',
+        'service': 'AISAFEEXAM Backend',
         'version': '2.0',
         'environment': Config.FLASK_ENV
     })

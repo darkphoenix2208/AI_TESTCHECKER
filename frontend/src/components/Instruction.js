@@ -214,7 +214,7 @@ export default function Instruction() {
                         margin: "0",
                         fontSize: "1rem"
                     }}>
-                        By proceeding with the exam, you acknowledge that you will be monitored by SecureExam AI technology.
+                        By proceeding with the exam, you acknowledge that you will be monitored by AISAFEEXAM technology.
                         Any violation of these rules may result in immediate disqualification.
                     </p>
                 </div>

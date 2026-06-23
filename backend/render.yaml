@@ -1,5 +1,5 @@
 # Render Deployment Configuration
-# This file defines the infrastructure for deploying SecureExam AI backend
+# This file defines the infrastructure for deploying AISAFEEXAM backend
 
 services:
   # Web Service - Flask Backend
@@ -18,7 +18,7 @@ services:
       - key: MONGODB_URI
         sync: false  # Set manually in Render dashboard
       - key: DB_NAME
-        value: secure_exam_db
+        value: aisafeexam_db
       - key: FRONTEND_URL
         value: https://your-secure-exam-app.vercel.app
       - key: ALLOWED_ORIGINS

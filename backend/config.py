@@ -1,5 +1,5 @@
 """
-Configuration management for SecureExam AI backend.
+Configuration management for AISAFEEXAM backend.
 Loads environment variables and provides application configuration.
 """
 import os
@@ -21,7 +21,7 @@ class Config:
     MONGODB_URI = os.getenv('MONGODB_URI')
     if not MONGODB_URI:
         raise ValueError("MONGODB_URI environment variable is required. Please set it in your .env file.")
-    DB_NAME = os.getenv('DB_NAME', 'secure_exam_db')
+    DB_NAME = os.getenv('DB_NAME', 'aisafeexam_db')
     
     # MongoDB Connection Settings (Production-ready)
     MONGO_SERVER_SELECTION_TIMEOUT = int(os.getenv('MONGO_SERVER_SELECTION_TIMEOUT', 15000))
@@ -64,7 +64,7 @@ class Config:
     def print_config():
         """Print current configuration (for debugging)"""
         print("\n" + "="*60)
-        print("SecureExam AI Backend Configuration")
+        print("AISAFEEXAM Backend Configuration")
         print("="*60)
         print(f"Environment: {Config.FLASK_ENV}")
         print(f"Debug Mode: {Config.DEBUG}")

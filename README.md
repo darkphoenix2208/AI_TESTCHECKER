@@ -1,4 +1,4 @@
-<h1 align="center">🕵️‍♂️ SecureExam AI</h1>
+<h1 align="center">🕵️‍♂️ AISAFEEXAM</h1>
 
 <div align="center">
   <img src="https://img.shields.io/badge/Python-3.11+-blue.svg" alt="Python Version">
@@ -31,7 +31,7 @@
 
 ## 🌟 System Architecture
 
-SecureExam AI operates on a robust client-server architecture, leveraging edge-capable AI models and a highly responsive frontend to ensure seamless proctoring.
+AISAFEEXAM operates on a robust client-server architecture, leveraging edge-capable AI models and a highly responsive frontend to ensure seamless proctoring.
 
 ```mermaid
 graph TD
@@ -177,8 +177,8 @@ flowchart LR
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/your-username/SecureExam-AI.git
-cd SecureExam-AI
+git clone https://github.com/your-username/AISAFEEXAM.git
+cd AISAFEEXAM
 ```
 
 ### 2. Backend Setup
@@ -329,7 +329,7 @@ npm test -- --coverage --watchAll=false
 ## 📁 Project Structure
 
 ```text
-SecureExam-AI/
+AISAFEEXAM/
 ├── backend/
 │   ├── app.py                    # Core Flask API & MongoDB Logic
 │   ├── requirements.txt          # Python dependencies
@@ -374,7 +374,7 @@ This project is licensed under the **[MIT License](LICENSE)**.
 
 - Powered by **[Ultralytics YOLOv5](https://github.com/ultralytics/yolov5)** for lightning-fast object detection.
 - Facial biometrics handled by **[Google MediaPipe](https://google.github.io/mediapipe/)**.
-- If you encounter issues, please open a ticket on **[GitHub Issues](https://github.com/your-username/SecureExam-AI/issues)**.
+- If you encounter issues, please open a ticket on **[GitHub Issues](https://github.com/your-username/AISAFEEXAM/issues)**.
 
 <p align="center">
   <i>Developed with ❤️ for secure, accessible online education.</i>

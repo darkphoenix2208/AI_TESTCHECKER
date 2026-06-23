@@ -1,5 +1,5 @@
 """
-SecureExam AI Backend - Main Application
+AISAFEEXAM Backend - Main Application
 Modular Flask application with route blueprints and centralized configuration.
 
 This is the refactored version of the original 1505-line monolithic app.py.
@@ -63,7 +63,7 @@ app = create_app()
 
 if __name__ == "__main__":
     print("\n" + "="*60)
-    print("SecureExam AI Backend - Modular Architecture v2.0")
+    print("AISAFEEXAM Backend - Modular Architecture v2.0")
     print("="*60)
     print(f"Environment: {Config.FLASK_ENV}")
     print(f"Host: {Config.HOST}:{Config.PORT}")
