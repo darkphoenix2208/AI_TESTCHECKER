@@ -1,0 +1,23 @@
+Flask==3.1.1
+Flask-CORS==6.0.1
+opencv-python==4.10.0.84
+mediapipe>=0.10.18
+numpy==1.26.4
+requests==2.31.0
+Pillow==10.4.0
+ultralytics==8.3.0
+torch
+torchvision
+pymongo[srv]==4.6.1
+dnspython==2.4.2
+pytest==7.4.3
+pytest-flask==1.3.0
+pytest-cov==4.1.0
+# Production dependencies
+gunicorn==21.2.0
+python-dotenv==1.0.0
+certifi>=2024.1.1
+# Ultralytics dependencies to prevent auto-update
+gitpython>=3.1.30
+setuptools>=70.0.0
+psutil

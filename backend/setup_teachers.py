@@ -1,0 +1,77 @@
+"""
+Setup script to create default teacher accounts in MongoDB
+Run this script after setting up your MongoDB connection to create initial teacher accounts.
+"""
+
+from pymongo import MongoClient
+from pymongo.errors import DuplicateKeyError
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# MongoDB Configuration - MUST be set in .env file
+MONGO_URI = os.getenv('MONGODB_URI')
+if not MONGO_URI:
+    raise ValueError("MONGODB_URI environment variable is required. Set it in your .env file.")
+DB_NAME = os.getenv('DB_NAME', 'ai_proctor_db')
+
+def setup_teachers():
+    """Create default teacher accounts with plain text passwords"""
+    try:
+        # Connect to MongoDB
+        client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+        db = client[DB_NAME]
+        
+        # Test connection
+        client.admin.command('ping')
+        print("✓ Connected to MongoDB successfully")
+        
+        # Default teacher accounts (plain text passwords - CHANGE IN PRODUCTION)
+        teachers = [
+            {"username": "admin", "password": "SecureAdmin2026!", "role": "admin"},
+            {"username": "teacher", "password": "TeacherPass2026!", "role": "teacher"},
+            {"username": "proctor", "password": "ProctorPass2026!", "role": "proctor"}
+        ]
+        
+        # Create unique index on username
+        try:
+            db.teachers.create_index("username", unique=True)
+            print("✓ Created unique index on username")
+        except Exception as e:
+            print(f"Index may already exist: {e}")
+        
+        # Insert teachers
+        inserted_count = 0
+        for teacher in teachers:
+            try:
+                db.teachers.insert_one(teacher.copy())
+                print(f"✓ Created teacher account: {teacher['username']} (password: {teacher['password']})")
+                inserted_count += 1
+            except DuplicateKeyError:
+                print(f"⚠ Teacher account '{teacher['username']}' already exists - skipping")
+        
+        print(f"\n{'='*60}")
+        print(f"Setup Complete!")
+        print(f"{'='*60}")
+        print(f"Total teachers inserted: {inserted_count}")
+        print(f"Total teachers in database: {db.teachers.count_documents({})}")
+        print(f"\nDefault Teacher Accounts:")
+        print(f"  - admin/SecureAdmin2026! (role: admin)")
+        print(f"  - teacher/TeacherPass2026! (role: teacher)")
+        print(f"  - proctor/ProctorPass2026! (role: proctor)")
+        print(f"{'='*60}\n")
+        
+    except Exception as e:
+        print(f"✗ Error setting up teachers: {e}")
+        return False
+    
+    return True
+
+if __name__ == "__main__":
+    print("\n" + "="*60)
+    print("Teacher Account Setup - Plain Text Passwords")
+    print("="*60 + "\n")
+    
+    setup_teachers()
