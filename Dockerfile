@@ -30,7 +30,7 @@ COPY --chown=user . $HOME/app
 # Step 3: Force install only the headless OpenCV (works on servers without a display)
 RUN pip install --no-cache-dir -r requirements.txt \
     && pip uninstall -y opencv-python opencv-contrib-python || true \
-    && pip install --no-cache-dir opencv-python-headless==4.10.0.84
+    && pip install --no-cache-dir opencv-contrib-python-headless==4.10.0.84
 
 # Pre-download YOLO model at build time so it's ready when the server starts
 RUN python -c "from ultralytics import YOLO; YOLO('yolov5nu.pt')" || true
