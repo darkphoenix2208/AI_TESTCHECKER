@@ -186,8 +186,7 @@ def detect_head():
 def register_face():
     """Register student face for verification"""
     face_detection = get_face_detection()
-    if face_detection is None:
-        return jsonify({'error': 'Face detection not available'}), 503
+    # face_detection may be None if MediaPipe is unavailable - we use Haar fallback below
     
     global face_labels, label_counter
     
@@ -208,10 +207,36 @@ def register_face():
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     if rgb is None or rgb.size == 0:
         return jsonify({'status': 'no_face'})
-    
-    results = face_detection.process(rgb)
-    if results.detections:
-        if len(results.detections) == 1:
+
+    # Detect face using MediaPipe if available, otherwise fall back to Haar cascade
+    face_found = False
+    multiple_faces = False
+
+    if face_detection is not None:
+        try:
+            results = face_detection.process(rgb)
+            if results.detections:
+                if len(results.detections) == 1:
+                    face_found = True
+                else:
+                    multiple_faces = True
+        except Exception as e:
+            print(f"MediaPipe detection error, falling back to Haar: {e}")
+
+    if not face_found and not multiple_faces:
+        # Haar cascade fallback
+        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(80, 80))
+        if len(faces) == 1:
+            face_found = True
+        elif len(faces) > 1:
+            multiple_faces = True
+
+    if multiple_faces:
+        return jsonify({'status': 'multiple_faces'})
+
+    if face_found:
             face_roi, success = extract_face_roi(frame)
             if not success or face_roi is None:
                 return jsonify({'status': 'no_face'})
@@ -247,8 +272,6 @@ def register_face():
                 except Exception as e:
                     print(f"Error storing face image: {e}")
             return jsonify({'status': 'registered'})
-        else:
-            return jsonify({'status': 'multiple_faces'})
     else:
         return jsonify({'status': 'no_face'})
 

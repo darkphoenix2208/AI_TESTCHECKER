@@ -25,12 +25,15 @@ WORKDIR $HOME/app/backend
 # Copy all project files into the container
 COPY --chown=user . $HOME/app
 
-# Step 1: Install all requirements
-# Step 2: Remove conflicting non-headless OpenCV versions installed by mediapipe/ultralytics
-# Step 3: Force install only the headless OpenCV (works on servers without a display)
-RUN pip install --no-cache-dir -r requirements.txt \
-    && pip uninstall -y opencv-python opencv-contrib-python || true \
-    && pip install --no-cache-dir opencv-contrib-python-headless==4.10.0.84
+# Step 1: Pin OpenCV headless FIRST before mediapipe/ultralytics pull in conflicting versions
+RUN pip install --no-cache-dir opencv-contrib-python-headless==4.10.0.84
+
+# Step 2: Install all other requirements
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Step 3: Force reinstall headless OpenCV to undo any overrides by mediapipe/ultralytics
+RUN pip uninstall -y opencv-python opencv-contrib-python 2>/dev/null || true \
+    && pip install --no-cache-dir --force-reinstall opencv-contrib-python-headless==4.10.0.84
 
 # Pre-download YOLO model at build time so it's ready when the server starts
 RUN python -c "from ultralytics import YOLO; YOLO('yolov5nu.pt')" || true
