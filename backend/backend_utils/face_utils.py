@@ -20,7 +20,7 @@ def init_face_detection():
     try:
         mp_face_detection = mp.solutions.face_detection
         _face_detection = mp_face_detection.FaceDetection(
-            model_selection=1, 
+            model_selection=0,  # 0 is for close faces (webcam), 1 is for far faces
             min_detection_confidence=0.5
         )
         _face_detection_available = True

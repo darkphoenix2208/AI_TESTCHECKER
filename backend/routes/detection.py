@@ -224,10 +224,13 @@ def register_face():
             print(f"MediaPipe detection error, falling back to Haar: {e}")
 
     if not face_found and not multiple_faces:
-        # Haar cascade fallback
+        # Haar cascade fallback - using more lenient parameters for webcam
         face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(80, 80))
+        # scaleFactor=1.1 -> 1.2 (faster, more lenient)
+        # minNeighbors=5 -> 3 (accepts more faces)
+        # minSize=(80,80) -> (30,30) (accepts smaller faces)
+        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.2, minNeighbors=3, minSize=(30, 30))
         if len(faces) == 1:
             face_found = True
         elif len(faces) > 1:
