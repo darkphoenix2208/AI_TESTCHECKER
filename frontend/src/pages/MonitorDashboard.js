@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, PieChart, Pie, Cell, LineChart, Line, Area, AreaChart } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, PieChart, Pie, Cell } from 'recharts';
 
 export default function MonitorDashboard() {
   const [alerts, setAlerts] = useState([]);
@@ -18,7 +18,7 @@ export default function MonitorDashboard() {
   // Fetch alerts and UFM data on component mount
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -211,7 +211,7 @@ export default function MonitorDashboard() {
     { name: 'Audio Anomalies', value: alertCounts.reduce((sum, s) => sum + s.counts.audio, 0), color: '#4ECDC4' },
   ];
 
-  const COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'];
+  // const COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD'];
 
   if (loading) {
     return (

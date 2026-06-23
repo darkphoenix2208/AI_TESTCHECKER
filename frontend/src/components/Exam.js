@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
 import Webcam from "react-webcam";
 import { setupKeyboardRestriction, setupTabSwitchDetection } from "../utils/keyboardRestriction";
 
 export default function Exam() {
   const examRef = useRef(null);
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
 
   // 1. Define questions FIRST
   const questions = useMemo(() => [
