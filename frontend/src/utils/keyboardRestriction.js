@@ -14,7 +14,7 @@ export const setupKeyboardRestriction = (options = {}) => {
     examId = null,
     onShortcutWarning = null,
     onKeyAlert = null,
-    backendUrl = 'http://localhost:5000'
+    backendUrl = 'https://darkphoenix2208-aiexam.hf.space'
   } = options;
 
   // Blocked keys list
@@ -222,7 +222,7 @@ export const setupTabSwitchDetection = (options = {}) => {
     studentId = null,
     examId = null,
     onTabSwitch = null,
-    backendUrl = 'http://localhost:5000',
+    backendUrl = 'https://darkphoenix2208-aiexam.hf.space',
     autoTerminate = true
   } = options;
 

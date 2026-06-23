@@ -14,7 +14,7 @@ export default function Login() {
         setError("");
         setIsLoading(true);
         const loginData = { username, rollNumber, password };
-        fetch("http://localhost:5000/login", {
+        fetch("https://darkphoenix2208-aiexam.hf.space/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(loginData)

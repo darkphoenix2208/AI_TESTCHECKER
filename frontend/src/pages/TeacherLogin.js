@@ -14,7 +14,7 @@ export default function TeacherLogin() {
         setIsLoading(true);
 
         const loginData = { username, password };
-        fetch("http://localhost:5000/teacher/login", {
+        fetch("https://darkphoenix2208-aiexam.hf.space/teacher/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(loginData)

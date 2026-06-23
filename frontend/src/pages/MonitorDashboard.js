@@ -26,11 +26,11 @@ export default function MonitorDashboard() {
       setError(null);
 
       // Fetch alerts
-      const alertsResponse = await fetch('http://localhost:5000/alerts');
+      const alertsResponse = await fetch('https://darkphoenix2208-aiexam.hf.space/alerts');
       const alertsData = await alertsResponse.json();
 
       // Fetch UFM students
-      const ufmResponse = await fetch('http://localhost:5000/api/ufm/exam_2025_ai');
+      const ufmResponse = await fetch('https://darkphoenix2208-aiexam.hf.space/api/ufm/exam_2025_ai');
       const ufmData = await ufmResponse.json();
 
       setAlerts(Array.isArray(alertsData) ? alertsData : []);
@@ -51,7 +51,7 @@ export default function MonitorDashboard() {
 
     setIsMarkingUfm(true);
     try {
-      const response = await fetch('http://localhost:5000/api/ufm', {
+      const response = await fetch('https://darkphoenix2208-aiexam.hf.space/api/ufm', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -97,7 +97,7 @@ export default function MonitorDashboard() {
 
       console.log('Sending reset request:', payload);
 
-      const response = await fetch('http://localhost:5000/api/exam/reset', {
+      const response = await fetch('https://darkphoenix2208-aiexam.hf.space/api/exam/reset', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
