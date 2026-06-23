@@ -1,8 +1,7 @@
 """
 YOLO-based object detection utilities for detecting forbidden objects.
-Handles model loading, caching, and object detection logic.
+Uses Ultralytics YOLO directly (avoids torch.hub trust prompt issues).
 """
-import torch
 import os
 from config import Config
 
@@ -12,7 +11,7 @@ _yolo_available = False
 
 def load_yolo_model():
     """
-    Load YOLOv5 model with fallback handling.
+    Load YOLO model using Ultralytics directly.
     Uses singleton pattern to load model only once.
     
     Returns:
@@ -26,23 +25,17 @@ def load_yolo_model():
     print("Loading YOLO model for object detection...")
     
     try:
+        from ultralytics import YOLO
+        
         model_path = Config.YOLO_MODEL_PATH
         
-        # Try to load custom trained model first, fallback to pretrained
         if os.path.exists(model_path):
-            _yolo_model = torch.hub.load('ultralytics/yolov5', 'custom', 
-                                        path=model_path, force_reload=False, trust_repo=True)
-            print(f"✓ Loaded custom YOLOv5 model from {model_path}")
+            _yolo_model = YOLO(model_path)
+            print(f"✓ Loaded custom YOLO model from {model_path}")
         else:
-            # Fallback to pretrained model (will auto-download)
-            _yolo_model = torch.hub.load('ultralytics/yolov5', 'yolov5n', 
-                                        pretrained=True, force_reload=False, trust_repo=True)
-            print("✓ Loaded pretrained YOLOv5n model")
-        
-        # Configure model settings
-        _yolo_model.conf = Config.YOLO_CONFIDENCE
-        _yolo_model.iou = Config.YOLO_IOU
-        _yolo_model.max_det = Config.YOLO_MAX_DETECTIONS
+            # Use a small pretrained YOLOv5n model (auto-downloads if not cached)
+            _yolo_model = YOLO('yolov5nu.pt')
+            print("✓ Loaded pretrained YOLOv5n model via Ultralytics")
         
         _yolo_available = True
         print("✓ YOLO model loaded successfully for cell phone/laptop detection")
@@ -54,6 +47,7 @@ def load_yolo_model():
         _yolo_model = None
     
     return _yolo_model, _yolo_available
+
 
 def detect_forbidden_objects(image_rgb):
     """
@@ -75,39 +69,35 @@ def detect_forbidden_objects(image_rgb):
     
     try:
         # Run YOLO detection
-        results = model(image_rgb, size=640)
-        
-        # Extract detection results
-        detections = results.pandas().xyxy[0]
+        results = model(image_rgb, verbose=False)
         
         # Define forbidden objects (COCO dataset class names)
-        forbidden_objects = {
-            'cell phone': 67,
-            'laptop': 63,
-            'book': 73
-        }
+        forbidden_class_names = {'cell phone', 'laptop', 'book'}
         
         detected_forbidden = []
         all_detections = []
         
-        for _, detection in detections.iterrows():
-            class_name = detection['name']
-            confidence = detection['confidence']
-            
-            # Store all detections with confidence > 0.3
-            if confidence > 0.3:
-                all_detections.append({
-                    'name': class_name,
-                    'confidence': float(confidence)
-                })
-            
-            # Check if it's a forbidden object with good confidence
-            if class_name in forbidden_objects and confidence > 0.4:
-                detected_forbidden.append({
-                    'name': class_name,
-                    'confidence': float(confidence)
-                })
-                print(f"⚠️  FORBIDDEN OBJECT DETECTED: {class_name} (confidence: {confidence:.2f})")
+        for result in results:
+            boxes = result.boxes
+            if boxes is None:
+                continue
+            for box in boxes:
+                class_id = int(box.cls[0])
+                confidence = float(box.conf[0])
+                class_name = model.names[class_id]
+                
+                if confidence > 0.3:
+                    all_detections.append({
+                        'name': class_name,
+                        'confidence': confidence
+                    })
+                
+                if class_name in forbidden_class_names and confidence > 0.4:
+                    detected_forbidden.append({
+                        'name': class_name,
+                        'confidence': confidence
+                    })
+                    print(f"⚠️  FORBIDDEN OBJECT DETECTED: {class_name} (confidence: {confidence:.2f})")
         
         if detected_forbidden:
             return {
@@ -128,6 +118,7 @@ def detect_forbidden_objects(image_rgb):
             'status': 'error',
             'message': f'Detection failed: {str(e)}'
         }
+
 
 def is_yolo_available():
     """Check if YOLO model is available"""

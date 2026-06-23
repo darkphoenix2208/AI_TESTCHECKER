@@ -1,14 +1,14 @@
-# Use a lightweight Python 3.11 base image (matches your render.yaml)
+# Use Python 3.11 slim base image
 FROM python:3.11-slim
 
-# Install system dependencies
-# libgl1 and libglib2.0-0 are required by OpenCV and MediaPipe
+# Install all system dependencies needed by OpenCV and MediaPipe
 RUN apt-get update && apt-get install -y \
     libgl1 \
     libglib2.0-0 \
     libsm6 \
     libxext6 \
     libxrender-dev \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Hugging Face security requirement: Set up a non-root user
@@ -22,15 +22,18 @@ ENV HOME=/home/user \
 # Set the working directory to the backend directory
 WORKDIR $HOME/app/backend
 
-# Copy all project files into the container, ensuring the non-root user owns them
-# We copy the entire root, but WORKDIR is set to backend
+# Copy all project files into the container
 COPY --chown=user . $HOME/app
 
-# Install Python dependencies from backend/requirements.txt
-# Force headless OpenCV to prevent MediaPipe import conflicts in Docker
+# Step 1: Install all requirements
+# Step 2: Remove conflicting non-headless OpenCV versions installed by mediapipe/ultralytics
+# Step 3: Force install only the headless OpenCV (works on servers without a display)
 RUN pip install --no-cache-dir -r requirements.txt \
-    && pip uninstall -y opencv-python opencv-contrib-python \
+    && pip uninstall -y opencv-python opencv-contrib-python || true \
     && pip install --no-cache-dir opencv-python-headless==4.10.0.84
+
+# Pre-download YOLO model at build time so it's ready when the server starts
+RUN python -c "from ultralytics import YOLO; YOLO('yolov5nu.pt')" || true
 
 # Expose the specific port Hugging Face Spaces expects
 EXPOSE 7860
@@ -39,7 +42,6 @@ EXPOSE 7860
 ENV FLASK_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=7860
-# Note: You will need to set MONGODB_URI in the Hugging Face Space settings!
 
-# Start the Flask app using Gunicorn
-CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:7860", "--workers", "2", "--timeout", "120"]
+# Start the Flask app using Gunicorn with a generous timeout for AI model loading
+CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:7860", "--workers", "1", "--timeout", "300"]
