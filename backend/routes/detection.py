@@ -60,6 +60,10 @@ def init_face_recognizer():
     """Initialize LBPH face recognizer"""
     global face_recognizer, face_labels, label_counter
     try:
+        if not hasattr(cv2, 'face'):
+            print("Warning: cv2.face module not available - face recognition disabled")
+            face_recognizer = None
+            return
         face_recognizer = cv2.face.LBPHFaceRecognizer_create(
             radius=2,
             neighbors=8,
@@ -83,9 +87,7 @@ def init_face_recognizer():
                 print(f"✓ Loaded existing face recognizer with {len(face_labels)} registered faces")
     except Exception as e:
         print(f"Warning: Failed to initialize face recognizer: {e}")
-        face_recognizer = cv2.face.LBPHFaceRecognizer_create(
-            radius=2, neighbors=8, grid_x=8, grid_y=8, threshold=100.0
-        )
+        face_recognizer = None  # Set to None so server can still start
 
 def retrain_face_recognizer(database):
     """Retrain face recognizer with all registered faces"""
