@@ -1,3 +1,11 @@
+---
+title: AIEXAM
+emoji: 🕵️‍♂️
+colorFrom: blue
+colorTo: green
+sdk: docker
+pinned: false
+---
 <h1 align="center">🕵️‍♂️ AISAFEEXAM</h1>
 
 <div align="center">
