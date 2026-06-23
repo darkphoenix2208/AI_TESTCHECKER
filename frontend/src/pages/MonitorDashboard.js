@@ -15,10 +15,7 @@ export default function MonitorDashboard() {
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetTarget, setResetTarget] = useState(null); // null for all, or student_id for specific student
 
-  // Fetch alerts and UFM data on component mount
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+
 
   const fetchData = useCallback(async () => {
     try {
@@ -44,6 +41,11 @@ export default function MonitorDashboard() {
       setLoading(false);
     }
   }, []);
+
+  // Fetch alerts and UFM data on component mount
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   // Function to mark student for unfair means
   const markForUnfairMeans = async (studentId, reason) => {
