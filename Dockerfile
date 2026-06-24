@@ -17,7 +17,7 @@ ENV HOME=/home/user \
     PATH=/home/user/.local/bin:$PATH
 
 # FIXED: WORKDIR matches where gunicorn will look for app.py
-WORKDIR $HOME/app
+WORKDIR $HOME/app/backend
 
 COPY --chown=user . $HOME/app
 
@@ -66,5 +66,5 @@ ENV FLASK_ENV=production \
     HOST=0.0.0.0 \
     PORT=7860
 
-# FIXED: cd into backend subdir if your app.py lives there
-CMD ["gunicorn", "backend.app:app", "--bind", "0.0.0.0:7860", "--workers", "1", "--timeout", "300"]
+# FIXED: run gunicorn inside backend directory so it finds config.py
+CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:7860", "--workers", "1", "--timeout", "300"]
