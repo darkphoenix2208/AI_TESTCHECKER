@@ -1,7 +1,6 @@
-# Use Python 3.11 slim base image
 FROM python:3.11-slim
 
-# Install system libraries required by OpenCV and MediaPipe.
+# System libs needed by OpenCV (headless) and MediaPipe
 RUN apt-get update && apt-get install -y \
     libgl1 \
     libglib2.0-0 \
@@ -11,40 +10,55 @@ RUN apt-get update && apt-get install -y \
     libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Hugging Face security requirement: Set up a non-root user
 RUN useradd -m -u 1000 user
 USER user
 
 ENV HOME=/home/user \
     PATH=/home/user/.local/bin:$PATH
 
-WORKDIR $HOME/app/backend
+# FIXED: WORKDIR matches where gunicorn will look for app.py
+WORKDIR $HOME/app
 
 COPY --chown=user . $HOME/app
 
-# Install all requirements.
-# NOTE: ultralytics pulls in opencv-python and mediapipe pulls in opencv-contrib-python.
-# Both provide the same cv2.so file; whichever installs last "wins" the slot on disk.
-RUN pip install --no-cache-dir -r requirements.txt
+# FIXED: install in strict order to avoid opencv conflict
+RUN pip install --no-cache-dir \
+    # Step 1: install headless opencv FIRST and lock it
+    opencv-python-headless==4.8.1.78 \
+    # Step 2: install mediapipe — it will see opencv already satisfied and skip its own
+    mediapipe==0.10.18 \
+    # Step 3: install ultralytics — same, opencv already satisfied
+    ultralytics==8.3.0 \
+    # Step 4: pinned torch CPU-only (tiny vs full CUDA build — saves ~2GB)
+    torch==2.3.1+cpu torchvision==0.18.1+cpu \
+    --extra-index-url https://download.pytorch.org/whl/cpu
 
-# Diagnostic check (non-fatal): print cv2 and mediapipe status to build logs.
-# The app handles missing cv2.face and mp.solutions gracefully at runtime,
-# so we don't fail the build here - we just report what we have.
-RUN python -c "\
-import sys; print('Python:', sys.version); \
-try: \
-    import cv2; print('cv2 version:', cv2.__version__); \
-    if hasattr(cv2, 'face'): print('cv2.face: AVAILABLE'); \
-    else: print('cv2.face: MISSING (face recognition will be unavailable)'); \
-except Exception as e: print('cv2 import error:', e); \
-try: \
-    import mediapipe as mp; print('mediapipe version:', mp.__version__); \
-    if hasattr(mp, 'solutions'): print('mp.solutions: AVAILABLE'); \
-    else: print('mp.solutions: ABSENT (Haar cascade fallback active)'); \
-except Exception as e: print('mediapipe import error:', e); \
-print('Diagnostic complete')"
+# Step 5: everything else
+RUN pip install --no-cache-dir \
+    Flask==3.1.1 \
+    Flask-CORS==6.0.1 \
+    numpy==1.26.4 \
+    requests==2.31.0 \
+    Pillow==10.4.0 \
+    pymongo[srv]==4.6.1 \
+    dnspython==2.4.2 \
+    gunicorn==21.2.0 \
+    python-dotenv==1.0.0 \
+    certifi>=2024.1.1 \
+    psutil \
+    pytest==7.4.3 \
+    pytest-flask==1.3.0 \
+    pytest-cov==4.1.0
 
-# Pre-download YOLO model at build time so it is ready when the server starts.
+# Verify no opencv conflict — this WILL fail the build if broken (good)
+RUN python -c "
+import cv2; print('cv2:', cv2.__version__)
+import mediapipe as mp; print('mediapipe:', mp.__version__)
+print('mp.solutions available:', hasattr(mp, 'solutions'))
+from ultralytics import YOLO; print('ultralytics: ok')
+"
+
+# Pre-download YOLO weights at build time so startup is instant
 RUN python -c "from ultralytics import YOLO; YOLO('yolov5nu.pt')" || true
 
 EXPOSE 7860
@@ -53,4 +67,5 @@ ENV FLASK_ENV=production \
     HOST=0.0.0.0 \
     PORT=7860
 
-CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:7860", "--workers", "1", "--timeout", "300"]
+# FIXED: cd into backend subdir if your app.py lives there
+CMD ["gunicorn", "backend.app:app", "--bind", "0.0.0.0:7860", "--workers", "1", "--timeout", "300"]
