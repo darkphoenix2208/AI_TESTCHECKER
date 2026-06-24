@@ -27,17 +27,6 @@ COPY --chown=user . $HOME/app
 # Both provide the same cv2.so file; whichever installs last "wins" the slot on disk.
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Force-reinstall opencv-contrib-python to guarantee cv2.face availability.
-#
-# Problem: after the install above, either opencv-python or opencv-contrib-python
-# may own the cv2.so file on disk. If opencv-python "won", cv2.face won't exist.
-#
-# Solution: --force-reinstall overwrites whatever cv2.so is present with the
-# opencv-contrib-python version (which includes all contrib modules like cv2.face).
-# --no-deps avoids touching numpy or any other already-installed package.
-# No uninstall step needed — we just overwrite the file directly.
-RUN pip install --no-cache-dir --force-reinstall --no-deps "opencv-contrib-python==4.11.0.86"
-
 # Diagnostic check (non-fatal): print cv2 and mediapipe status to build logs.
 # The app handles missing cv2.face and mp.solutions gracefully at runtime,
 # so we don't fail the build here - we just report what we have.
