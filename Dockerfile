@@ -51,12 +51,11 @@ RUN pip install --no-cache-dir \
     pytest-cov==4.1.0
 
 # Verify no opencv conflict — this WILL fail the build if broken (good)
-RUN python -c "
-import cv2; print('cv2:', cv2.__version__)
-import mediapipe as mp; print('mediapipe:', mp.__version__)
-print('mp.solutions available:', hasattr(mp, 'solutions'))
-from ultralytics import YOLO; print('ultralytics: ok')
-"
+RUN python -c "\
+import cv2; print('cv2:', cv2.__version__); \
+import mediapipe as mp; print('mediapipe:', mp.__version__); \
+print('mp.solutions available:', hasattr(mp, 'solutions')); \
+from ultralytics import YOLO; print('ultralytics: ok')"
 
 # Pre-download YOLO weights at build time so startup is instant
 RUN python -c "from ultralytics import YOLO; YOLO('yolov5nu.pt')" || true
