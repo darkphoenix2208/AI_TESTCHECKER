@@ -438,6 +438,9 @@ export default function Exam() {
       } else if (data.status === "no_face") {
         // Don't submit for no face detection, just warn
         console.log("No face detected in current frame");
+      } else if (data.status === "unavailable") {
+        // Face recognizer not loaded yet on the server - silent skip
+        console.log("Face recognition temporarily unavailable on server");
       }
     } catch (error) {
       console.error("Face verification error:", error);

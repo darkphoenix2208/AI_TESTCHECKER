@@ -1,6 +1,10 @@
 Flask==3.1.1
 Flask-CORS==6.0.1
-opencv-contrib-python-headless==4.10.0.84
+# opencv-contrib-python (non-headless) is intentionally NOT pinned here.
+# mediapipe pulls it in as a dependency, and the Docker image provides all required
+# system display libs (libgl1, libsm6 etc.) making non-headless opencv work correctly.
+# Pinning it here caused a conflict: step 3 of the old Dockerfile removed mediapipe's
+# opencv-contrib-python and replaced it with headless, breaking mp.solutions.
 mediapipe>=0.10.18
 numpy==1.26.4
 requests==2.31.0

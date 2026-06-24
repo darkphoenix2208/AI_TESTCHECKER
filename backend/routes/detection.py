@@ -283,7 +283,11 @@ def verify_face():
     """Verify student face against registered face"""
     face_detection = get_face_detection()
     if face_detection is None or face_recognizer is None:
-        return jsonify({'error': 'Face detection/recognition not available'}), 503
+        # Graceful degradation: log warning but don't crash with 503.
+        # This prevents the frontend from flooding the console with network errors.
+        # face_recognizer is None when cv2.face is missing or model isn't trained yet.
+        print("⚠️  verify-face: face_detection or face_recognizer is None - skipping verification")
+        return jsonify({'status': 'unavailable', 'message': 'Face recognition not ready'}), 200
     
     roll_number = request.form['roll_number']
     file = request.files['image']
