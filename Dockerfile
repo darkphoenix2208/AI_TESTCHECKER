@@ -1,8 +1,7 @@
 # Use Python 3.11 slim base image
 FROM python:3.11-slim
 
-# Install all system dependencies needed by OpenCV (headless and non-headless) and MediaPipe.
-# These libs make opencv-contrib-python (non-headless) work fine in this container.
+# Install system libraries required by OpenCV and MediaPipe.
 RUN apt-get update && apt-get install -y \
     libgl1 \
     libglib2.0-0 \
@@ -16,62 +15,50 @@ RUN apt-get update && apt-get install -y \
 RUN useradd -m -u 1000 user
 USER user
 
-# Define environmental variables for the user
 ENV HOME=/home/user \
     PATH=/home/user/.local/bin:$PATH
 
-# Set the working directory to the backend directory
 WORKDIR $HOME/app/backend
 
-# Copy all project files into the container
 COPY --chown=user . $HOME/app
 
 # Install all requirements.
-# mediapipe pulls in opencv-contrib-python; ultralytics pulls in opencv-python.
-# Both provide cv2.so and conflict with each other. We resolve this below.
+# NOTE: ultralytics pulls in opencv-python and mediapipe pulls in opencv-contrib-python.
+# Both provide the same cv2.so file; whichever installs last "wins" the slot on disk.
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Fix the opencv-python vs opencv-contrib-python file conflict:
-# 1. Both packages install cv2.so to the same location, overwriting each other.
-# 2. The last one to install "wins" the file on disk.
-# 3. When we uninstall the one that "owns" the file per pip's metadata,
-#    pip deletes cv2.so, leaving the other package's import broken.
+# Force-reinstall opencv-contrib-python to guarantee cv2.face availability.
 #
-# Solution: Uninstall BOTH, then reinstall ONLY opencv-contrib-python.
-# This gives a clean, unambiguous cv2.so that has cv2.face (contrib modules).
-# ultralytics works fine with contrib since it's a strict superset of opencv-python.
-RUN pip uninstall -y opencv-python opencv-contrib-python 2>/dev/null || true \
-    && pip install --no-cache-dir "opencv-contrib-python==4.11.0.86"
+# Problem: after the install above, either opencv-python or opencv-contrib-python
+# may own the cv2.so file on disk. If opencv-python "won", cv2.face won't exist.
+#
+# Solution: --force-reinstall overwrites whatever cv2.so is present with the
+# opencv-contrib-python version (which includes all contrib modules like cv2.face).
+# --no-deps avoids touching numpy or any other already-installed package.
+# No uninstall step needed — we just overwrite the file directly.
+RUN pip install --no-cache-dir --force-reinstall --no-deps "opencv-contrib-python==4.11.0.86"
 
-# Pin numpy back to 1.26.4 after install.
-# opencv-contrib-python can upgrade numpy to 2.x during resolution,
-# but ultralytics==8.3.0 requires numpy<2.0.0.
-RUN pip install --no-cache-dir "numpy==1.26.4"
-
-# Verify that cv2.face (LBPH recognizer) is available - this is REQUIRED.
-# mp.solutions check is informational only: mediapipe 0.10.35 removed the legacy
-# solutions attribute; the backend now falls back to Haar cascade automatically.
+# Verify cv2.face is accessible (strict - fails build if missing).
+# mp.solutions check is informational: mediapipe 0.10.35 removed this attribute;
+# the backend automatically uses Haar cascade as a fallback.
 RUN python -c "\
 import cv2; \
-assert hasattr(cv2, 'face'), 'FATAL: cv2.face missing - opencv-contrib not installed correctly'; \
-print('✓ cv2.face OK -', cv2.face.LBPHFaceRecognizer_create()); \
+assert hasattr(cv2, 'face'), 'FATAL: cv2.face missing after contrib reinstall'; \
+print('cv2 version:', cv2.__version__); \
+print('✓ cv2.face OK'); \
 import mediapipe as mp; \
-if hasattr(mp, 'solutions'): \
-    print('✓ mp.solutions OK'); \
-else: \
-    print('⚠️ mp.solutions not available in mediapipe', mp.__version__, '- Haar cascade fallback will be used for face detection'); \
+print('mediapipe version:', mp.__version__); \
+if hasattr(mp, 'solutions'): print('✓ mp.solutions OK'); \
+else: print('NOTE: mp.solutions absent - Haar cascade fallback is active'); \
 print('Build verification complete')"
 
-# Pre-download YOLO model at build time so it's ready when the server starts
+# Pre-download YOLO model at build time so it is ready when the server starts.
 RUN python -c "from ultralytics import YOLO; YOLO('yolov5nu.pt')" || true
 
-# Expose the specific port Hugging Face Spaces expects
 EXPOSE 7860
 
-# Environment variables for Flask
-ENV FLASK_ENV=production
-ENV HOST=0.0.0.0
-ENV PORT=7860
+ENV FLASK_ENV=production \
+    HOST=0.0.0.0 \
+    PORT=7860
 
-# Start the Flask app using Gunicorn with a generous timeout for AI model loading
 CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:7860", "--workers", "1", "--timeout", "300"]
