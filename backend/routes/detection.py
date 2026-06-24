@@ -280,55 +280,81 @@ def register_face():
 
 @detection_bp.route('/verify-face', methods=['POST'])
 def verify_face():
-    """Verify student face against registered face"""
-    face_detection = get_face_detection()
-    if face_detection is None or face_recognizer is None:
-        # Graceful degradation: log warning but don't crash with 503.
-        # This prevents the frontend from flooding the console with network errors.
-        # face_recognizer is None when cv2.face is missing or model isn't trained yet.
-        print("⚠️  verify-face: face_detection or face_recognizer is None - skipping verification")
-        return jsonify({'status': 'unavailable', 'message': 'Face recognition not ready'}), 200
+    """Verify student face against registered face.
     
+    Uses MediaPipe face detection when available, falls back to OpenCV Haar
+    cascade when MediaPipe is unavailable (e.g. mp.solutions removed in newer
+    mediapipe versions). The LBPH recognizer (cv2.face) works independently.
+    """
+    face_detection = get_face_detection()  # May be None if mp.solutions unavailable
+
+    # We only truly can't proceed if the LBPH recognizer isn't ready yet.
+    if face_recognizer is None:
+        print("⚠️  verify-face: face_recognizer is None - skipping verification")
+        return jsonify({'status': 'unavailable', 'message': 'Face recognition not ready'}), 200
+
     roll_number = request.form['roll_number']
     file = request.files['image']
     npimg = np.frombuffer(file.read(), np.uint8)
     frame = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    
-    results = face_detection.process(rgb)
-    if not results.detections:
+
+    # --- Face presence check: MediaPipe first, Haar cascade as fallback ---
+    num_faces = 0
+    if face_detection is not None:
+        # MediaPipe path (when mp.solutions is available)
+        try:
+            results = face_detection.process(rgb)
+            num_faces = len(results.detections) if results.detections else 0
+        except Exception as e:
+            print(f"MediaPipe detection error in verify_face, falling back to Haar: {e}")
+            face_detection = None  # trigger Haar fallback below
+
+    if face_detection is None:
+        # Haar cascade fallback (always available via cv2)
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        face_cascade = cv2.CascadeClassifier(
+            cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+        )
+        faces = face_cascade.detectMultiScale(
+            gray, scaleFactor=1.2, minNeighbors=3, minSize=(30, 30)
+        )
+        num_faces = len(faces)
+
+    if num_faces == 0:
         return jsonify({'status': 'no_face'})
-    elif len(results.detections) > 1:
+    elif num_faces > 1:
         return jsonify({'status': 'multiple_faces'})
-    else:
-        face_roi, success = extract_face_roi(frame)
-        
-        if not success or face_roi is None:
-            return jsonify({'status': 'no_face'})
-        
-        if roll_number in face_labels:
-            expected_label = face_labels[roll_number]
-            predicted_label, confidence = face_recognizer.predict(face_roi)
-            
-            CONFIDENCE_THRESHOLD = Config.FACE_CONFIDENCE_THRESHOLD
-            
-            if predicted_label == expected_label and confidence < CONFIDENCE_THRESHOLD:
-                return jsonify({
-                    'status': 'match',
-                    'confidence': float(confidence),
-                    'recognized_as': roll_number
-                })
-            else:
-                recognized_roll = next((k for k, v in face_labels.items() if v == predicted_label), 'unknown')
-                return jsonify({
-                    'status': 'mismatch',
-                    'confidence': float(confidence),
-                    'expected': roll_number,
-                    'recognized_as': recognized_roll,
-                    'severity': 'high' if confidence > 80 else 'medium'
-                })
+
+    # --- LBPH face recognition ---
+    face_roi, success = extract_face_roi(frame)
+
+    if not success or face_roi is None:
+        return jsonify({'status': 'no_face'})
+
+    if roll_number in face_labels:
+        expected_label = face_labels[roll_number]
+        predicted_label, confidence = face_recognizer.predict(face_roi)
+
+        CONFIDENCE_THRESHOLD = Config.FACE_CONFIDENCE_THRESHOLD
+
+        if predicted_label == expected_label and confidence < CONFIDENCE_THRESHOLD:
+            return jsonify({
+                'status': 'match',
+                'confidence': float(confidence),
+                'recognized_as': roll_number
+            })
         else:
-            return jsonify({'status': 'not_registered', 'message': 'Student not registered for face recognition'})
+            recognized_roll = next((k for k, v in face_labels.items() if v == predicted_label), 'unknown')
+            return jsonify({
+                'status': 'mismatch',
+                'confidence': float(confidence),
+                'expected': roll_number,
+                'recognized_as': recognized_roll,
+                'severity': 'high' if confidence > 80 else 'medium'
+            })
+    else:
+        return jsonify({'status': 'not_registered', 'message': 'Student not registered for face recognition'})
 
 @detection_bp.route('/recognize-face', methods=['POST'])
 def recognize_face():

@@ -42,16 +42,19 @@ RUN pip uninstall -y opencv-python 2>/dev/null || true
 # but ultralytics==8.3.0 requires numpy<2.0.0.
 RUN pip install --no-cache-dir "numpy==1.26.4"
 
-# Verify that cv2.face (LBPH face recognizer) AND mp.solutions are both available.
-# This will FAIL the build loudly if either is broken, catching problems at build time.
+# Verify that cv2.face (LBPH recognizer) is available - this is REQUIRED.
+# mp.solutions check is informational only: mediapipe 0.10.35 removed the legacy
+# solutions attribute; the backend now falls back to Haar cascade automatically.
 RUN python -c "\
 import cv2; \
-assert hasattr(cv2, 'face'), 'cv2.face missing - opencv-contrib not installed correctly'; \
+assert hasattr(cv2, 'face'), 'FATAL: cv2.face missing - opencv-contrib not installed correctly'; \
+print('✓ cv2.face OK -', cv2.face.LBPHFaceRecognizer_create()); \
 import mediapipe as mp; \
-assert hasattr(mp, 'solutions'), 'mp.solutions missing - mediapipe broken by opencv conflict'; \
-print('✓ cv2.face OK'); \
-print('✓ mp.solutions OK'); \
-print('All proctoring dependencies verified!')"
+if hasattr(mp, 'solutions'): \
+    print('✓ mp.solutions OK'); \
+else: \
+    print('⚠️ mp.solutions not available in mediapipe', mp.__version__, '- Haar cascade fallback will be used for face detection'); \
+print('Build verification complete')"
 
 # Pre-download YOLO model at build time so it's ready when the server starts
 RUN python -c "from ultralytics import YOLO; YOLO('yolov5nu.pt')" || true
