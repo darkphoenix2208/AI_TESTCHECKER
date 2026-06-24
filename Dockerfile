@@ -27,15 +27,19 @@ WORKDIR $HOME/app/backend
 COPY --chown=user . $HOME/app
 
 # Install all requirements.
-# mediapipe will pull in opencv-contrib-python (non-headless), which is fine because
-# the system libs above provide all the display dependencies it needs.
-# ultralytics pulls in opencv-python but mediapipe's opencv-contrib-python is installed
-# last and overwrites it (contrib is a superset, so cv2.face is available).
+# mediapipe pulls in opencv-contrib-python; ultralytics pulls in opencv-python.
+# Both provide cv2.so and conflict with each other. We resolve this below.
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Remove plain opencv-python (installed by ultralytics).
+# opencv-contrib-python (installed by mediapipe) is a strict superset of opencv-python,
+# so ultralytics, YOLO, and all other packages work perfectly with only contrib installed.
+# Having BOTH causes a cv2.so file conflict that silently breaks mp.solutions.
+RUN pip uninstall -y opencv-python 2>/dev/null || true
+
 # Pin numpy back to 1.26.4 after install.
-# Some packages (e.g. opencv-contrib-python-headless) upgrade numpy to 2.x during
-# dependency resolution, but ultralytics==8.3.0 requires numpy<2.0.0.
+# opencv-contrib-python can upgrade numpy to 2.x during resolution,
+# but ultralytics==8.3.0 requires numpy<2.0.0.
 RUN pip install --no-cache-dir "numpy==1.26.4"
 
 # Verify that cv2.face (LBPH face recognizer) AND mp.solutions are both available.
