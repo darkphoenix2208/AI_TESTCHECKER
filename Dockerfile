@@ -31,11 +31,17 @@ COPY --chown=user . $HOME/app
 # Both provide cv2.so and conflict with each other. We resolve this below.
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Remove plain opencv-python (installed by ultralytics).
-# opencv-contrib-python (installed by mediapipe) is a strict superset of opencv-python,
-# so ultralytics, YOLO, and all other packages work perfectly with only contrib installed.
-# Having BOTH causes a cv2.so file conflict that silently breaks mp.solutions.
-RUN pip uninstall -y opencv-python 2>/dev/null || true
+# Fix the opencv-python vs opencv-contrib-python file conflict:
+# 1. Both packages install cv2.so to the same location, overwriting each other.
+# 2. The last one to install "wins" the file on disk.
+# 3. When we uninstall the one that "owns" the file per pip's metadata,
+#    pip deletes cv2.so, leaving the other package's import broken.
+#
+# Solution: Uninstall BOTH, then reinstall ONLY opencv-contrib-python.
+# This gives a clean, unambiguous cv2.so that has cv2.face (contrib modules).
+# ultralytics works fine with contrib since it's a strict superset of opencv-python.
+RUN pip uninstall -y opencv-python opencv-contrib-python 2>/dev/null || true \
+    && pip install --no-cache-dir "opencv-contrib-python==4.11.0.86"
 
 # Pin numpy back to 1.26.4 after install.
 # opencv-contrib-python can upgrade numpy to 2.x during resolution,
